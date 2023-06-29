@@ -50,6 +50,7 @@ const cart = () => {
                 </div>
 
                 {/* <EmptyCart /> */}
+
             </Wrapper>
         </div>
     )
