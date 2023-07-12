@@ -1,25 +1,28 @@
 import HeroBanner from "@/components/HeroBanner";
 import ProductCard from "@/components/ProductCard";
 import Wrapper from "@/components/layout/Wrapper";
-import { fetchDataFromAPI } from "@/utils/api";
-import { useEffect, useState } from "react";
+import { fetchDataFromAPI } from "@/utils/axios";
+import { QueryClient, useQuery } from "@tanstack/react-query";
 
-export default function Home() {
+import { dehydrate } from '@tanstack/react-query'
 
-    const [product, setProduct] = useState(null);
+const getProducts = async () => {
+    const productData = await fetchDataFromAPI('/products?populate=*');
+    return productData
+};
 
-    useEffect(() => {
-        fetchData()
-    }, [product])
+const Home = () => {
+    const { data: products, isLoading, isError, isFetching } = useQuery({
+        queryKey: ['product'],
+        queryFn: getProducts,
+    })
 
-    const fetchData = async () => {
-        const {data}  = await fetchDataFromAPI('/products')
-        setProduct(data)
+    if (isLoading) {
+        return <div>Loading...</div>
     }
 
-
     return (
-        <main className="">
+        <main className="" >
             <HeroBanner />
             <Wrapper >
                 <div className="text-center max-w-[800px] mx-auto my-[50px] md:my-[80px]">
@@ -28,18 +31,26 @@ export default function Home() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 px-5 md:px-0 pb-5 my-14">
-                    <ProductCard />
-                    <ProductCard />
-                    <ProductCard />
-                    <ProductCard />
-                    <ProductCard />
-                    <ProductCard />
-                    <ProductCard />
-                    <ProductCard />
-                    <ProductCard />
+                    {products?.data.map((product) => ( 
+                        <ProductCard key={product?.id} data={product}/>
+                    ))}
+
                 </div>
             </Wrapper>
         </main>
     )
 }
 
+export default Home
+
+export async function getStaticProps() {
+    const queryClient = new QueryClient()
+
+    await queryClient.prefetchQuery(['product'], getProducts)
+
+    return {
+        props: {
+            dehydratedState: dehydrate(queryClient),
+        },
+    }
+}
